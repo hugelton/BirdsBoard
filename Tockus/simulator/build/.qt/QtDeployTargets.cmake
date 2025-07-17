@@ -1,0 +1,2 @@
+set(__QT_DEPLOY_TARGET_TockusSimulator_FILE /Users/kurogedelic/Desktop/BirdsBoards/Tockus/simulator/build/TockusSimulator.app/Contents/MacOS/TockusSimulator)
+set(__QT_DEPLOY_TARGET_TockusSimulator_TYPE EXECUTABLE)

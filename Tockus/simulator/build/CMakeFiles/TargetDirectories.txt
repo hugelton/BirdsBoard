@@ -1,0 +1,5 @@
+/Users/kurogedelic/Desktop/BirdsBoards/Tockus/simulator/build/CMakeFiles/TockusSimulator.dir
+/Users/kurogedelic/Desktop/BirdsBoards/Tockus/simulator/build/CMakeFiles/edit_cache.dir
+/Users/kurogedelic/Desktop/BirdsBoards/Tockus/simulator/build/CMakeFiles/rebuild_cache.dir
+/Users/kurogedelic/Desktop/BirdsBoards/Tockus/simulator/build/CMakeFiles/TockusSimulator_autogen_timestamp_deps.dir
+/Users/kurogedelic/Desktop/BirdsBoards/Tockus/simulator/build/CMakeFiles/TockusSimulator_autogen.dir
