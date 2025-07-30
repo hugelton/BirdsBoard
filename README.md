@@ -107,7 +107,15 @@ The CERN Open Hardware Licence ensures that any modifications to the hardware de
 
 ### Firmware License
 The firmware applications are licensed under the **GNU Lesser General Public License v3.0 (LGPL-3.0)**. A copy of the license is available in the `Firmware/` directory.
+
 The LGPL-3.0 allows use in both open and closed-source systems, as long as modifications to the firmware itself are released under the same license.
+
+## Acknowledgements
+
+This project draws inspiration and technical insight from the following excellent works:
+
+- [**Winterbloom Big Honking Button**](https://github.com/wntrblm/Big_Honking_Button): The concept of software-swappable applications and aspects of the hardware design were greatly influenced by this project.
+- [**HAGIWO/MOD2**](https://note.com/solder_state/n/nce8f7defcf98): A far more refined predecessor in the concept of modular, reprogrammable firmware architectures. 
 
 ## Author
 
