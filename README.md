@@ -2,7 +2,7 @@
 
 BirdsBoard is an open-source modular synthesizer project based on the RP2350A microcontroller and the PT8211 I2S DAC. This project provides a collection of digitally controlled oscillator (DCO) applications for Eurorack-compatible systems.
 
--> Based on [("Wren")(https://documents.hugelton.com/Wren)] indivisual module.
+-> Based on ["Wren"](https://documents.hugelton.com/Wren) indivisual module.
 
 ## Firmware
 
@@ -21,6 +21,9 @@ This repository contains several firmware applications.
 - **Open Source:** Hardware and firmware are released under open-source licenses.
 
 ## Applications
+
+A powerful wavetable oscillator with 8 user-editable wavetable banks.
+> Try the online wavetable editor for Wren: [https://hugelton.com/tools/wren-editor/](https://hugelton.com/tools/wren-editor/)
 
 ### Wren
 A powerful wavetable oscillator with 8 user-editable wavetable banks.
@@ -117,6 +120,14 @@ This project draws inspiration and technical insight from the following excellen
 - [**Winterbloom Big Honking Button**](https://github.com/wntrblm/Big_Honking_Button): The concept of software-swappable applications and aspects of the hardware design were greatly influenced by this project.
 - [**HAGIWO/MOD2**](https://note.com/solder_state/n/nce8f7defcf98): A far more refined predecessor in the concept of modular, reprogrammable firmware architectures. 
 
+## Contributing
+
+Contributions are welcome!
+
+Feel free to fork this repository, submit pull requests, or open issues if you find bugs or have feature suggestions. Whether it's hardware revisions, firmware improvements, or documentation fixes—every bit helps.
+
+See `CONTRIBUTING.md` (coming soon) for guidelines.
+
 ## Author
 
-**Leo Kuroshita** ([@kurogedelic](https://x.com/kurogedelic)) for ([Hügelton Instruments](https://github.com/kurogedelic)).
+**Leo Kuroshita** ([@kurogedelic](https://x.com/kurogedelic)) for ([Hügelton Instruments](https://github.com/hugelton)).
