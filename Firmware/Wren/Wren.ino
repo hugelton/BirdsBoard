@@ -1,0 +1,802 @@
+/*
+ * Wren - Real-time Wavetable DCO
+ * Copyright (C) 2025 Leo Kuroshita
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+#include <I2S.h>
+#include <EEPROM.h>
+#include <FastLED.h>
+#include <pico/multicore.h>
+#include "waveforms.h"
+#include "sin_table.h"
+
+// PT8211S I2S pins
+#define I2S_BCLK 6  // Bit clock
+#define I2S_DOUT 8  // Data output
+
+// ADC pins for control
+#define PITCH_CV 26    // ADC0
+#define PITCH_KNOB 27  // ADC1
+#define CV1 28         // ADC2 - Waveform bank select
+#define CV2 29         // ADC3 - Wavetable position
+
+// Gate input
+#define GATE_IN 2  // GPIO2 - Gate input
+
+// FastLED for WS2812B
+#define LED_PIN 16
+#define NUM_LEDS 1
+CRGB leds[NUM_LEDS];
+
+// ADC range calibration (from CLAUDE.md)
+#define PITCH_CV_MIN 0
+#define PITCH_CV_MAX 4095
+#define PITCH_KNOB_MIN 10
+#define PITCH_KNOB_MAX 4000
+#define CV1_MIN 8
+#define CV1_MAX 2000
+#define CV2_MIN 8
+#define CV2_MAX 2000
+
+// Create I2S instance for PT8211S
+I2S i2s(OUTPUT, I2S_BCLK, I2S_DOUT);
+
+// Wavetable parameters
+const int WAVETABLE_SIZE = 32;                                                 // 32 samples per waveform
+const int WAVEFORM_BANKS = 8;                                                  // 8 banks for simpler design
+const int EEPROM_SIZE = WAVETABLE_SIZE * WAVEFORM_BANKS * 2 + WAVEFORM_BANKS;  // +8 bytes for modulation types
+
+// Modulation types
+enum ModulationType {
+  MOD_WAVEFOLDING = 0,  // Default
+  MOD_OVERFLOW = 1,
+  MOD_BITCRUSH = 2,
+  MOD_PHASE_DISTORTION = 3,
+  MOD_RESONANCE = 4,
+  NUM_MODULATION_TYPES = 5
+};
+
+// Per-bank modulation settings (default to wavefolding)
+uint8_t bankModulationTypes[WAVEFORM_BANKS] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+
+// Audio parameters
+const int sampleRate = 44100;
+float frequency = 440.0;
+const int amplitude = 32767;  // Full scale for maximum S/N ratio
+float phase = 0.0;
+bool gateState = false;
+bool lastGateState = false;
+float wavefoldAmount = 0.0;
+float smoothedWavefoldAmount = 0.0;
+
+// Anti-aliasing filter state
+float antiAliasFilter1 = 0.0;
+float antiAliasFilter2 = 0.0;
+const float AA_CUTOFF = 0.85;  // Anti-aliasing cutoff (85% of Nyquist)
+
+// Dither noise generator state
+uint32_t ditherSeed = 12345;
+
+// Wavetable memory - RAM copy for performance (16-bit unsigned for DAC)
+uint16_t wavetables[WAVEFORM_BANKS][WAVETABLE_SIZE];
+uint16_t currentWavetable[WAVETABLE_SIZE];
+uint8_t currentModulationType = MOD_WAVEFOLDING;  // Current bank's modulation type
+uint8_t currentBank = 0;                          // Bank for real-time editing (controlled by BANK command)
+uint8_t playbackBank = 0;                         // Bank for audio playback (controlled by CV1)
+uint8_t targetBank = 0;
+bool bankChanged = false;
+
+// Binary protocol variables
+uint8_t protocolBuffer[66];  // Max: 1 cmd + 1 param + 64 data bytes
+uint16_t bufferIndex = 0;
+uint8_t expectedBytes = 0;
+bool receivingCommand = false;
+
+// Protocol command constants
+#define CMD_PING 0x01
+#define CMD_BANK 0x02
+#define CMD_SAVE 0x03
+#define CMD_DUMP 0x04
+#define CMD_REALTIME 0x05
+#define CMD_MODTYPE 0x06  // New: Set modulation type for bank
+
+// Protocol response constants
+#define RESP_PING 0xA1
+#define RESP_BANK 0xA2
+#define RESP_SAVE 0xA3
+#define RESP_DUMP 0xA4
+#define RESP_MODTYPE 0xA6  // New: Modulation type set response
+#define RESP_ERROR 0xE0
+#define RESP_RANGE 0xE1
+
+// Simple but effective ADC Filter (from ADC_Test success)
+struct ADCFilter {
+  uint16_t filtered;     // Current filtered value (integer for stability)
+  uint16_t lastOutput;   // Last output value
+  uint32_t accumulator;  // Running sum for averaging
+  uint8_t sampleCount;   // Number of samples in accumulator
+  uint16_t deadband;     // Deadband threshold
+};
+
+ADCFilter adcFilters[4];
+const uint8_t AVG_SAMPLES = 16;         // Number of samples to average
+const uint16_t DEADBAND_THRESHOLD = 3;  // Ignore changes smaller than this
+
+// Bank switching hysteresis
+struct BankHysteresis {
+  uint8_t currentBank;
+  uint8_t targetBank;
+  uint16_t threshold;
+  uint32_t switchTime;
+};
+
+BankHysteresis bankHyst = { 0, 0, 50, 0 };
+
+// Core1 NeoPixel variables
+volatile uint8_t displayBank = 0;
+volatile bool serialConnected = false;
+volatile uint32_t lastSerialActivity = 0;
+
+void setup() {
+  Serial.begin(115200);
+
+  // Initialize EEPROM
+  EEPROM.begin(EEPROM_SIZE);
+
+  // Initialize ADC
+  analogReadResolution(12);
+
+  // Initialize Gate input
+  pinMode(GATE_IN, INPUT);
+
+  i2s.setBitsPerSample(16);
+  i2s.setLSBJFormat();
+
+  if (!i2s.begin(sampleRate)) {
+    Serial.println("Failed to initialize I2S!");
+    while (1)
+      ;
+  }
+
+
+  // UNCOMMENT THE NEXT LINE TO RESET ALL WAVETABLES TO DEFAULTS
+  // clearEEPROM();  // WARNING: This will erase all saved wavetables!
+
+  // Load wavetables from EEPROM
+  loadAllWavetables();
+
+  // Check if all banks are empty and load presets if needed
+  bool needsPresets = true;
+  for (int bank = 0; bank < WAVEFORM_BANKS; bank++) {
+    if (!isWavetableEmpty(bank)) {
+      needsPresets = false;
+      break;
+    }
+  }
+
+  if (needsPresets) {
+    generateDefaultWaves();
+  }
+
+  // Set initial wavetable
+  memcpy(currentWavetable, wavetables[playbackBank], WAVETABLE_SIZE * 2);
+
+  // Initialize ADC filters
+  initializeADCFilters();
+
+  // Initialize FastLED
+  FastLED.addLeds<WS2812B, LED_PIN, GRB>(leds, NUM_LEDS);
+  FastLED.clear();
+  FastLED.show();
+
+  // Start Core1 for NeoPixel control
+  multicore_launch_core1(core1Task);
+}
+
+void loop() {
+  // Handle serial commands
+  handleSerialProtocol();
+
+  // Read CV inputs every 16 samples (K102E-style high frequency)
+  static int sampleCount = 0;
+  if (sampleCount % 16 == 0) {
+    updateParameters();
+  }
+
+  // Handle bank switching
+  if (bankChanged) {
+    memcpy(currentWavetable, wavetables[playbackBank], WAVETABLE_SIZE * 2);
+    bankChanged = false;
+  }
+
+  // Always ensure current modulation type matches playback bank
+  currentModulationType = bankModulationTypes[playbackBank];
+
+  // Generate wavetable sample
+  float tablePos = phase * WAVETABLE_SIZE;
+  int index = (int)tablePos;
+  float frac = tablePos - index;
+
+  // Linear interpolation between samples (16-bit unsigned values)
+  uint16_t sample1 = currentWavetable[index % WAVETABLE_SIZE];
+  uint16_t sample2 = currentWavetable[(index + 1) % WAVETABLE_SIZE];
+
+  float sampleFloat = sample1 + frac * (sample2 - sample1);
+  sampleFloat = ((sampleFloat - 32768.0) / 32768.0);  // Convert 0-65535 to -1.0 to 1.0
+
+  // Apply current modulation type
+  if (smoothedWavefoldAmount > 0.0) {
+    sampleFloat = applyModulation(sampleFloat, currentModulationType, smoothedWavefoldAmount);
+  }
+
+  // Apply anti-aliasing filter to reduce high-frequency content
+  sampleFloat = applyAntiAliasing(sampleFloat);
+
+  // Add dither noise to reduce quantization noise
+  sampleFloat += generateDither();
+
+  // Clamp to valid range before conversion
+  sampleFloat = constrain(sampleFloat, -1.0, 1.0);
+
+  int16_t sample = (int16_t)(sampleFloat * amplitude);
+
+  // Write to I2S
+  i2s.write(sample);
+  i2s.write(sample);
+
+  // Update phase
+  phase += frequency / sampleRate;
+  if (phase >= 1.0) phase -= 1.0;
+
+  sampleCount++;
+}
+
+void handleSerialProtocol() {
+  while (Serial.available()) {
+    uint8_t data = Serial.read();
+    lastSerialActivity = millis();  // Update serial activity
+
+    if (!receivingCommand) {
+      // Start of new command
+      if (data >= CMD_PING && data <= CMD_MODTYPE) {
+        protocolBuffer[0] = data;
+        bufferIndex = 1;
+        receivingCommand = true;
+
+        // Determine expected bytes for this command
+        switch (data) {
+          case CMD_PING:
+            expectedBytes = 1;  // Just the command
+            break;
+          case CMD_BANK:
+          case CMD_SAVE:
+          case CMD_DUMP:
+            expectedBytes = 2;  // Command + bank parameter
+            break;
+          case CMD_MODTYPE:
+            expectedBytes = 3;  // Command + bank + modulation type
+            break;
+          case CMD_REALTIME:
+            expectedBytes = 65;  // Command + 64 bytes data
+            break;
+        }
+      } else {
+        // Invalid command - send error
+        Serial.write(RESP_ERROR);
+      }
+    } else {
+      // Continue receiving command data
+      protocolBuffer[bufferIndex++] = data;
+
+      // Check if we have received the complete command
+      if (bufferIndex >= expectedBytes) {
+        handleBinaryCommand();
+        bufferIndex = 0;
+        expectedBytes = 0;
+        receivingCommand = false;
+      }
+    }
+  }
+}
+
+void handleBinaryCommand() {
+  uint8_t command = protocolBuffer[0];
+
+  switch (command) {
+    case CMD_PING:
+      Serial.write(RESP_PING);
+      break;
+
+    case CMD_BANK:
+      {
+        uint8_t bankNumber = protocolBuffer[1];
+        if (bankNumber >= WAVEFORM_BANKS) {
+          Serial.write(RESP_RANGE);
+        } else {
+          currentBank = bankNumber;
+          Serial.write(RESP_BANK);
+        }
+        break;
+      }
+
+    case CMD_SAVE:
+      {
+        uint8_t bankNumber = protocolBuffer[1];
+        if (bankNumber >= WAVEFORM_BANKS) {
+          Serial.write(RESP_RANGE);
+        } else {
+          saveWavetable(bankNumber);
+          saveModulationSettings();  // Save all modulation settings when SAVE is called
+          Serial.write(RESP_SAVE);
+        }
+        break;
+      }
+
+    case CMD_DUMP:
+      {
+        uint8_t bankNumber = protocolBuffer[1];
+        if (bankNumber >= WAVEFORM_BANKS) {
+          Serial.write(RESP_RANGE);
+        } else {
+          Serial.write(RESP_DUMP);
+          // Send specified bank waveform data
+          for (int i = 0; i < WAVETABLE_SIZE; i++) {
+            Serial.write((uint8_t)(wavetables[bankNumber][i] & 0xFF));
+            Serial.write((uint8_t)((wavetables[bankNumber][i] >> 8) & 0xFF));
+          }
+        }
+        break;
+      }
+
+    case CMD_REALTIME:
+      processRealtimeWaveform();
+      // No response for real-time commands
+      break;
+
+    case CMD_MODTYPE:
+      {
+        uint8_t bankNumber = protocolBuffer[1];
+        uint8_t modulationType = protocolBuffer[2];
+
+        if (bankNumber >= WAVEFORM_BANKS || modulationType >= NUM_MODULATION_TYPES) {
+          Serial.write(RESP_RANGE);
+        } else {
+          bankModulationTypes[bankNumber] = modulationType;
+          // If this is the current playback bank, update immediately
+          if (bankNumber == playbackBank) {
+            currentModulationType = modulationType;
+          }
+          // Don't save to EEPROM - wait for explicit SAVE command
+          Serial.write(RESP_MODTYPE);
+        }
+        break;
+      }
+
+    default:
+      Serial.write(RESP_ERROR);
+      break;
+  }
+}
+
+void processRealtimeWaveform() {
+  // Convert 64 bytes to 32 uint16_t samples (little endian)
+  // Data starts at protocolBuffer[1] (after command byte)
+  for (int i = 0; i < WAVETABLE_SIZE; i++) {
+    uint8_t lowByte = protocolBuffer[1 + i * 2];
+    uint8_t highByte = protocolBuffer[1 + i * 2 + 1];
+    wavetables[currentBank][i] = (uint16_t)(lowByte | (highByte << 8));
+  }
+
+  // Only update playback if editing the same bank that's currently playing
+  if (currentBank == playbackBank) {
+    memcpy(currentWavetable, wavetables[currentBank], WAVETABLE_SIZE * 2);
+  }
+}
+
+void updateParameters() {
+  // Read and filter CV inputs
+  uint16_t rawValues[4] = {
+    (uint16_t)analogRead(PITCH_CV),
+    (uint16_t)analogRead(PITCH_KNOB),
+    (uint16_t)analogRead(CV1),
+    (uint16_t)analogRead(CV2)
+  };
+
+  // Apply ADC filtering
+  filterADCValues(rawValues);
+
+  // Get filtered values (now integer-based for stability)
+  uint16_t pitchCV = adcFilters[0].filtered;  // No cast needed - already uint16_t
+  uint16_t pitchKnob = adcFilters[1].filtered;
+  uint16_t cv1 = adcFilters[2].filtered;
+  uint16_t cv2 = adcFilters[3].filtered;
+
+  gateState = digitalRead(GATE_IN);
+
+  // Hard Sync - Reset phase on rising edge
+  if (gateState && !lastGateState) {
+    phase = 0.0;  // Reset oscillator phase
+  }
+  lastGateState = gateState;
+
+  // Calculate frequency with calibrated ranges
+  // Use floating point math throughout for better precision
+  float adcVoltage = ((float)(PITCH_CV_MAX - pitchCV) / (float)PITCH_CV_MAX) * 3.3;
+  float knobVoltage = ((float)(pitchKnob - PITCH_KNOB_MIN) / (float)(PITCH_KNOB_MAX - PITCH_KNOB_MIN)) * 3.3;
+  knobVoltage = constrain(knobVoltage, 0.0, 3.3);
+
+  // Convert to actual CV voltage (0-5V range)
+  float actualCV = (adcVoltage - 1.65) / 0.33;
+  actualCV = constrain(actualCV, 0.0, 5.0);
+
+  // 1V/octave standard
+  float cvOctaves = actualCV;
+  float knobOctaves = (knobVoltage - 1.65) / 1.65;
+
+  // Calculate frequency with exponential smoothing for stability
+  float targetFrequency = 440.0 * pow(2.0, cvOctaves + knobOctaves - 2.0);
+  targetFrequency = constrain(targetFrequency, 20.0, 8000.0);
+
+  // Smooth frequency changes to reduce jitter
+  frequency = frequency * 0.99 + targetFrequency * 0.01;
+
+  // CV1: Bank selection with hysteresis
+  updateBankSelection(cv1);
+
+  // CV2: Wavefolding amount (0-100%)
+  wavefoldAmount = map(cv2, CV2_MIN, CV2_MAX, 0, 100) / 100.0;
+  wavefoldAmount = constrain(wavefoldAmount, 0.0, 1.0);
+
+  // Smooth the wavefold amount for stable modulation
+  smoothedWavefoldAmount = smoothedWavefoldAmount * 0.95 + wavefoldAmount * 0.05;
+
+  // Update display bank for NeoPixel
+  displayBank = playbackBank;
+}
+
+void loadAllWavetables() {
+  for (int bank = 0; bank < WAVEFORM_BANKS; bank++) {
+    loadWavetable(bank);
+  }
+  loadModulationSettings();
+}
+
+void loadWavetable(uint8_t bank) {
+  if (bank >= WAVEFORM_BANKS) return;
+
+  int address = bank * WAVETABLE_SIZE * 2;
+  for (int i = 0; i < WAVETABLE_SIZE; i++) {
+    uint8_t lowByte = EEPROM.read(address + i * 2);
+    uint8_t highByte = EEPROM.read(address + i * 2 + 1);
+    wavetables[bank][i] = (uint16_t)(lowByte | (highByte << 8));
+  }
+}
+
+void saveWavetable(uint8_t bank) {
+  if (bank >= WAVEFORM_BANKS) return;
+
+  int address = bank * WAVETABLE_SIZE * 2;
+  for (int i = 0; i < WAVETABLE_SIZE; i++) {
+    uint8_t lowByte = wavetables[bank][i] & 0xFF;
+    uint8_t highByte = (wavetables[bank][i] >> 8) & 0xFF;
+    EEPROM.write(address + i * 2, lowByte);
+    EEPROM.write(address + i * 2 + 1, highByte);
+  }
+  EEPROM.commit();
+}
+
+// Load modulation settings from EEPROM
+void loadModulationSettings() {
+  int baseAddress = WAVEFORM_BANKS * WAVETABLE_SIZE * 2;  // After wavetable data
+  for (int bank = 0; bank < WAVEFORM_BANKS; bank++) {
+    uint8_t modType = EEPROM.read(baseAddress + bank);
+    if (modType < NUM_MODULATION_TYPES) {
+      bankModulationTypes[bank] = modType;
+    } else {
+      bankModulationTypes[bank] = MOD_WAVEFOLDING;  // Default to wavefolding
+    }
+  }
+}
+
+// Save modulation settings to EEPROM
+void saveModulationSettings() {
+  int baseAddress = WAVEFORM_BANKS * WAVETABLE_SIZE * 2;  // After wavetable data
+  for (int bank = 0; bank < WAVEFORM_BANKS; bank++) {
+    EEPROM.write(baseAddress + bank, bankModulationTypes[bank]);
+  }
+  EEPROM.commit();
+}
+
+
+bool isWavetableEmpty(uint8_t bank) {
+  for (int i = 0; i < WAVETABLE_SIZE; i++) {
+    if (wavetables[bank][i] != 0) return false;
+  }
+  return true;
+}
+
+void clearEEPROM() {
+  // Clear all EEPROM data
+  for (int i = 0; i < EEPROM_SIZE; i++) {
+    EEPROM.write(i, 0);
+  }
+  EEPROM.commit();
+}
+
+void generateDefaultWaves() {
+  // Load all preset waveforms from PROGMEM
+  for (int bank = 0; bank < WAVEFORM_BANKS; bank++) {
+    for (int i = 0; i < WAVETABLE_SIZE; i++) {
+      wavetables[bank][i] = pgm_read_word(&preset_waveforms[bank][i]);
+    }
+    // Save each preset to EEPROM
+    saveWavetable(bank);
+    // Set default modulation (wavefolding)
+    bankModulationTypes[bank] = MOD_WAVEFOLDING;
+  }
+  // Save default modulation settings
+  saveModulationSettings();
+}
+
+// Modulation Functions
+
+// Original wavefolding function
+float applyWavefolding(float input, float amount) {
+  if (amount <= 0.0) return input;
+
+  // Scale input by fold amount (more folding = higher gain)
+  float scaled = input * (1.0 + amount * 4.0);
+
+  // Apply multiple folding stages
+  float folded = scaled;
+
+  // Triangle wave folding - reflects signal when it exceeds ±1.0
+  while (folded > 1.0) {
+    folded = 2.0 - folded;
+  }
+  while (folded < -1.0) {
+    folded = -2.0 - folded;
+  }
+
+  // Mix between original and folded signal
+  return input * (1.0 - amount) + folded * amount;
+}
+
+// Overflow modulation - let signal wrap around instead of clipping
+float applyOverflow(float input, float amount) {
+  if (amount <= 0.0) return input;
+
+  // Scale input to increase overflow probability
+  float scaled = input * (1.0 + amount * 3.0);
+
+  // Wrap around at ±1.0 boundaries
+  while (scaled > 1.0) scaled -= 2.0;
+  while (scaled < -1.0) scaled += 2.0;
+
+  // Mix between original and overflowed signal
+  return input * (1.0 - amount) + scaled * amount;
+}
+
+// Bitcrush modulation - reduce bit depth for digital distortion
+float applyBitcrush(float input, float amount) {
+  if (amount <= 0.0) return input;
+  float stepSize = (amount * 0.99);  // 0.5001 down to 0.0001
+
+  // Quantize the input to step size
+  float crushed = floor(input / stepSize + 0.5) * stepSize;
+
+  // Clamp to valid range
+  crushed = constrain(crushed, -1.0, 1.0);
+
+  return crushed;
+}
+
+// Phase Distortion modulation - distort wavetable read position
+float applyPhaseDistortion(float input, float amount, float currentPhase) {
+  if (amount <= 0.0) return input;
+
+  // Generate distorted phase using fast sine table
+  float distortedPhase = currentPhase + amount * 0.3 * fastSin(currentPhase);
+
+  // Fast phase wrapping using fractional part
+  distortedPhase = distortedPhase - floor(distortedPhase);
+
+  // Re-sample wavetable at distorted phase position
+  float distortedTablePos = distortedPhase * WAVETABLE_SIZE;
+  int index = (int)distortedTablePos;
+  float frac = distortedTablePos - index;
+
+  // Use bitwise AND for faster modulo (WAVETABLE_SIZE is 32)
+  uint16_t sample1 = currentWavetable[index & 31];
+  uint16_t sample2 = currentWavetable[(index + 1) & 31];
+
+  float distortedSample = sample1 + frac * (sample2 - sample1);
+  distortedSample = -((distortedSample - 32768.0) / 32767.5);
+
+  // Mix between original and phase-distorted signal
+  return input * (1.0 - amount) + distortedSample * amount;
+}
+
+// Resonance modulation - CZ-101 style resonant synthesis
+float applyResonance(float input, float amount, float currentPhase) {
+  if (amount <= 0.0) return input;
+
+  // Resonant frequency ratio (1.0x to 8.0x fundamental)
+  float resonantRatio = 1.0 + amount * 7.0;
+
+  // Generate resonant frequency phase - use fractional part instead of fmod
+  float resonantPhase = (currentPhase * resonantRatio);
+  resonantPhase = resonantPhase - floor(resonantPhase);
+
+  // Generate resonant sine wave using fast table
+  float resonantSine = fastSin(resonantPhase);
+
+  // Window function (fundamental frequency) for amplitude modulation
+  float windowAmp = abs(fastSin(currentPhase));
+
+  // Apply CZ-101 style resonant synthesis
+  float resonantSignal = resonantSine * windowAmp;
+
+  // Mix between original wavetable and resonant signal
+  return input * (1.0 - amount) + resonantSignal * amount;
+}
+
+// Simple 2-pole anti-aliasing low-pass filter
+float applyAntiAliasing(float input) {
+  antiAliasFilter1 = antiAliasFilter1 * AA_CUTOFF + input * (1.0 - AA_CUTOFF);
+  antiAliasFilter2 = antiAliasFilter2 * AA_CUTOFF + antiAliasFilter1 * (1.0 - AA_CUTOFF);
+  return antiAliasFilter2;
+}
+
+// Simple dither noise generator (LFSR)
+float generateDither() {
+  ditherSeed = (ditherSeed >> 1) ^ (-(ditherSeed & 1u) & 0xd0000001u);
+  return ((float)(ditherSeed & 0x3) / 4.0f - 0.5f) / 32768.0f;  // ±0.5 LSB dither (proper level)
+}
+
+// Master modulation dispatcher
+float applyModulation(float input, uint8_t modulationType, float amount) {
+  switch (modulationType) {
+    case MOD_WAVEFOLDING:
+      return applyWavefolding(input, amount);
+    case MOD_OVERFLOW:
+      return applyOverflow(input, amount);
+    case MOD_BITCRUSH:
+      return applyBitcrush(input, amount);
+    case MOD_PHASE_DISTORTION:
+      return applyPhaseDistortion(input, amount, phase);
+    case MOD_RESONANCE:
+      return applyResonance(input, amount, phase);
+    default:
+      return input;
+  }
+}
+
+// Core1 Task for FastLED control
+void core1Task() {
+  // Define colors using CRGB
+  CRGB colors[8] = {
+    CRGB::Red,      // Bank 0 - SAW
+    CRGB::Green,    // Bank 1 - SINE
+    CRGB::Blue,     // Bank 2 - SQUARE
+    CRGB::Yellow,   // Bank 3 - TRIANGLE
+    CRGB::Magenta,  // Bank 4 - PULSE50
+    CRGB::Cyan,     // Bank 5 - PULSE25
+    CRGB::Orange,   // Bank 6 - HARMONIC
+    CRGB::White     // Bank 7 - NOISE
+  };
+
+  uint32_t lastUpdate = 0;
+
+  while (true) {
+    uint32_t now = millis();
+
+    // Check if serial is active (within last 3 seconds)
+    serialConnected = (now - lastSerialActivity) < 3000;
+
+    // Update every 100ms for smooth animation
+    if (now - lastUpdate >= 100) {
+      lastUpdate = now;
+
+      FastLED.clear();
+
+      if (serialConnected) {
+        // Dim current bank color by 50% when serial is connected
+        CRGB dimColor = colors[displayBank];
+        dimColor.fadeToBlackBy(128);  // 50% dimming (128 out of 255)
+        leds[0] = dimColor;
+      } else {
+        // Show current bank color on single LED at full brightness
+        leds[0] = colors[displayBank];
+      }
+
+      FastLED.show();
+    }
+
+    delay(5);  // 10ms delay
+  }
+}
+
+// ADC filtering functions - Simple and stable approach
+void initializeADCFilters() {
+  // Simple deadband per channel optimized for Wren
+  uint16_t deadbands[4] = {
+    2,  // PITCH_CV: ±2 for stable tuning
+    3,  // PITCH_KNOB: ±3 for knob control
+    4,  // CV1: ±4 for bank switching
+    3   // CV2: ±3 for wavefolding
+  };
+
+  for (int i = 0; i < 4; i++) {
+    adcFilters[i].filtered = 0;
+    adcFilters[i].lastOutput = 0;
+    adcFilters[i].accumulator = 0;
+    adcFilters[i].sampleCount = 0;
+    adcFilters[i].deadband = deadbands[i];
+  }
+}
+
+void filterADCValues(uint16_t rawValues[4]) {
+  for (int i = 0; i < 4; i++) {
+    // Simple running average - proven stable in ADC_Test
+    adcFilters[i].accumulator += rawValues[i];
+    adcFilters[i].sampleCount++;
+
+    // Calculate average when we have enough samples
+    if (adcFilters[i].sampleCount >= AVG_SAMPLES) {
+      uint16_t avgValue = adcFilters[i].accumulator / AVG_SAMPLES;
+
+      // Apply deadband - only update if change is significant
+      if (adcFilters[i].filtered == 0) {
+        // Initialize
+        adcFilters[i].filtered = avgValue;
+        adcFilters[i].lastOutput = avgValue;
+      } else {
+        int change = abs((int)avgValue - (int)adcFilters[i].lastOutput);
+        if (change > adcFilters[i].deadband) {
+          adcFilters[i].filtered = avgValue;
+          adcFilters[i].lastOutput = avgValue;
+        }
+        // If within deadband, keep the last output value
+      }
+
+      // Reset accumulator
+      adcFilters[i].accumulator = 0;
+      adcFilters[i].sampleCount = 0;
+    }
+  }
+}
+
+void updateBankSelection(uint16_t cv1Value) {
+  uint32_t currentTime = millis();
+
+  // Map CV1 to bank number using calibrated range
+  uint8_t newTargetBank = map(cv1Value, CV1_MIN, CV1_MAX, 0, WAVEFORM_BANKS - 1);
+  newTargetBank = constrain(newTargetBank, 0, WAVEFORM_BANKS - 1);
+
+  // Hysteresis for bank switching
+  if (newTargetBank != bankHyst.targetBank) {
+    bankHyst.targetBank = newTargetBank;
+    bankHyst.switchTime = currentTime;
+  }
+
+  // Switch banks only after hysteresis delay
+  if (currentTime - bankHyst.switchTime > 100 &&  // 100ms delay
+      bankHyst.targetBank != playbackBank) {
+    playbackBank = bankHyst.targetBank;
+    bankChanged = true;
+  }
+}

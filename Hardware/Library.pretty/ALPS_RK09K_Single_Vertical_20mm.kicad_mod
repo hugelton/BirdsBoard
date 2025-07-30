@@ -1,0 +1,375 @@
+(footprint "ALPS_RK09K_Single_Vertical_20mm"
+	(version 20240108)
+	(generator "pcbnew")
+	(generator_version "8.0")
+	(layer "F.Cu")
+	(descr "Potentiometer, vertical, Alps RK09L Single, http://www.alps.com/prod/info/E/HTML/Potentiometer/RotaryPotentiometers/RK09L/RK09L_list.html")
+	(tags "Potentiometer vertical Alps RK09L Single")
+	(property "Reference" "REF**"
+		(at -7.239 5.715 90)
+		(layer "F.SilkS")
+		(uuid "7ec5c65c-52d7-4412-bd45-e70e3fcb9d92")
+		(effects
+			(font
+				(size 0.8 0.8)
+				(thickness 0.1)
+			)
+		)
+	)
+	(property "Value" "10kB"
+		(at 0 10 0)
+		(layer "F.Fab")
+		(uuid "201525a1-4893-48d8-8648-c14e2fe5eef2")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Footprint" "Kicad_Akiyuki_Footprint:ALPS_RK09K_Single_Vertical_20mm"
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "0d13b54f-c355-40e6-b247-8dd05b2c0708")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "f19a5cda-4c17-4632-9b70-11eab285e9b4")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" "Potentiometer with a mounting pin"
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "87090103-efd6-49af-a3bd-a36b9aa52df8")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "LCSC" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "a9a672b8-2067-49aa-8533-3d0d0faf6fd6")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Sim.Library" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "98a6f03c-2270-40d2-bf45-85f8f843cee5")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Sim.Name" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "bfd5c953-5b06-426d-8fba-11efe2632ac7")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr through_hole)
+	(fp_line
+		(start -6.17 -4.97)
+		(end 6.17 -4.97)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "55f1c225-60a5-406b-9fd1-94cd314fe438")
+	)
+	(fp_line
+		(start -6.17 -1.7)
+		(end -6.17 -4.97)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "ee18df7e-e71b-497b-ad40-b59e29f884b6")
+	)
+	(fp_line
+		(start -6.17 6.62)
+		(end -6.17 1.7)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "32bd0e64-3313-497b-b09a-d7f5589c2159")
+	)
+	(fp_line
+		(start -6.17 6.62)
+		(end -3.371 6.62)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "59ebf423-c17a-4875-a4ee-92f0aae20f0c")
+	)
+	(fp_line
+		(start -1.629 6.62)
+		(end -0.87 6.62)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "47999404-6ef5-4097-84c5-5d4ac0840e31")
+	)
+	(fp_line
+		(start 0.871 6.62)
+		(end 1.63 6.62)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "39bdf210-835b-4b28-a2c7-08197cc7ea4f")
+	)
+	(fp_line
+		(start 3.37 6.62)
+		(end 6.17 6.62)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "8a087925-a72f-465e-9d46-51acfcbbfb27")
+	)
+	(fp_line
+		(start 6.17 -1.7)
+		(end 6.17 -4.97)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "4b74828c-cdb7-47d4-84db-4b6cbc9b67a5")
+	)
+	(fp_line
+		(start 6.17 6.62)
+		(end 6.17 1.7)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "9af1614a-ee47-411b-b4b2-680ea6ba34b4")
+	)
+	(fp_line
+		(start -7 -5.1)
+		(end -7 8.65)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "135bd5ee-28e9-495d-97bd-7f7cb8f8fe43")
+	)
+	(fp_line
+		(start -7 8.65)
+		(end 7 8.65)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "fc8910dc-abd5-405d-b30e-c02959af1fc1")
+	)
+	(fp_line
+		(start 7 -5.1)
+		(end -7 -5.1)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "2880d9a9-2788-4ff6-964f-357586ba1163")
+	)
+	(fp_line
+		(start 7 8.65)
+		(end 7 -5.1)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "a5e314e8-7161-46a7-a220-9ced890a3eed")
+	)
+	(fp_line
+		(start -6.05 -4.85)
+		(end -6.05 6.5)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "386ed0d4-14c5-4bdb-a606-2d7e21467cf9")
+	)
+	(fp_line
+		(start -6.05 6.5)
+		(end 6.05 6.5)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "d83e067c-5e64-4008-813c-865d34dbf55e")
+	)
+	(fp_line
+		(start 6.05 -4.85)
+		(end -6.05 -4.85)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "b59b99a6-1b20-4c50-9ee1-1b1e19569b0e")
+	)
+	(fp_line
+		(start 6.05 6.5)
+		(end 6.05 -4.85)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "e80c02e1-1a97-49b8-bd46-5c35dfb66ded")
+	)
+	(fp_circle
+		(center 0 0)
+		(end 0 -3)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill none)
+		(layer "F.Fab")
+		(uuid "0bcb7491-e028-4ad6-bd0f-42e27d969b13")
+	)
+	(pad "1" thru_hole circle
+		(at -2.5 7 90)
+		(size 1.4 1.4)
+		(drill 1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "25a52466-4ad8-4bed-b69d-3c3e1ea81f47")
+	)
+	(pad "2" thru_hole circle
+		(at 0 7 90)
+		(size 1.4 1.4)
+		(drill 1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "6c4e4d12-a951-49d4-83c5-4c4d2cad01eb")
+	)
+	(pad "3" thru_hole circle
+		(at 2.5 7 90)
+		(size 1.4 1.4)
+		(drill 1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "18926187-22bc-4886-a8be-eb220a99d6d9")
+	)
+	(pad "MP" thru_hole roundrect
+		(at -5 0 90)
+		(size 2.9 2.9)
+		(drill 2.4)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(roundrect_rratio 0.25)
+		(uuid "cbf59a0a-f925-4b7c-8d75-3ff87d6e863d")
+	)
+	(pad "MP" thru_hole roundrect
+		(at 5 0 90)
+		(size 2.9 2.9)
+		(drill 2.4)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(roundrect_rratio 0.25)
+		(uuid "94438205-24e3-42ce-bd40-7c522f5d7752")
+	)
+	(model "${AKIYUKIKICAD3D}/RK09K1130-20.STEP"
+		(hide yes)
+		(offset
+			(xyz 0 0 6.4)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
+	(model "/Users/kurogedelic/Documents/KiCAD/3D/Unnamed-Solid.step"
+		(hide yes)
+		(offset
+			(xyz 0 0 6)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 180 0)
+		)
+	)
+	(model "/Users/kurogedelic/Documents/KiCAD/3D/potentiometer-30/RK09K1130AH1.STEP"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
+	(model "/Users/kurogedelic/KiCAD/3D/potentiometer-30/RK09K1130AH1.STEP"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
+)

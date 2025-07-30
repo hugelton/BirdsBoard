@@ -1,0 +1,15 @@
+# Project Licensing
+
+This project uses a dual-license scheme. The hardware and firmware are licensed under different terms.
+
+## Hardware License
+
+The hardware designs, including schematics and PCB layouts, located in the `Hardware/` directory are licensed under the **CERN-OHL-S v2**.
+
+A full copy of the license text is available in `Hardware/LICENSE`.
+
+## Firmware License
+
+The firmware applications, located in the `Firmware/` directory, are licensed under the **GNU Lesser General Public License v3.0 (LGPL-3.0)**.
+
+A full copy of the license text is available in `Firmware/LICENSE`.

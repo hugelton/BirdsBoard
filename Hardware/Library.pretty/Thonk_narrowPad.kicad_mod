@@ -1,0 +1,340 @@
+(footprint "Thonk_narrowPad"
+	(version 20240108)
+	(generator "pcbnew")
+	(generator_version "8.0")
+	(locked yes)
+	(layer "F.Cu")
+	(descr "TRS 3.5mm, vertical, Thonkiconn, PCB mount, (http://www.qingpu-electronics.com/en/products/WQP-PJ398SM-362.html)")
+	(tags "WQP-PJ398SM WQP-PJ301M-12 TRS 3.5mm mono vertical jack thonkiconn qingpu")
+	(property "Reference" "REF**"
+		(at 0 -8.128 180)
+		(layer "F.SilkS")
+		(uuid "81e3b0a2-c98a-44a5-9c8a-95ba933550e8")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "GateInput"
+		(at 0 -1.48 180)
+		(layer "F.Fab")
+		(uuid "aff25f78-04b6-4202-b318-dee03cc89a3d")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Footprint" "_Hugelton:Thonk_narrowPad"
+		(at 0 -6.48 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "7b2c0dbf-c8fb-4b67-a051-b8035c8521ed")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 -6.48 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "e8be6d37-b0ee-4c9d-ba30-5b2e82802d35")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" "Audio Jack, 2 Poles (Mono / TS), Switched T Pole (Normalling)"
+		(at 0 -6.48 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "ba88aede-d7d3-4a79-ad6c-4f5de4d610b4")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "LCSC" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "cc823861-a1d5-4b10-a7c4-ea9a3e5bc25d")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Sim.Library" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "211ecf85-3b48-4316-b386-75face676f42")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Sim.Name" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "3b0e67f9-d496-45d6-b656-f8b9e4c9b201")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr through_hole)
+	(fp_line
+		(start -4.5 -4.5)
+		(end -4.5 6)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "c113a602-72db-49e8-a5cf-6d5f51ed730b")
+	)
+	(fp_line
+		(start -0.72 -4.5)
+		(end -4.5 -4.5)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "3b5e294e-41f1-4543-af1c-b781c68e541d")
+	)
+	(fp_line
+		(start 0 6)
+		(end -4.5 6)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "71929db6-6670-4fe9-864b-892b8e2d3a88")
+	)
+	(fp_line
+		(start 0.72 -4.5)
+		(end -0.72 -4.5)
+		(stroke
+			(width 0.1)
+			(type default)
+		)
+		(layer "F.SilkS")
+		(uuid "163f5c8b-4dce-4b45-9014-f6b4300b4fa3")
+	)
+	(fp_line
+		(start 4.5 -4.5)
+		(end 0.72 -4.5)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "d9451e01-dbd1-4f19-a737-917a83bbfcd1")
+	)
+	(fp_line
+		(start 4.5 -4.5)
+		(end 4.5 6)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "b7487710-8ec7-4395-8d06-ea540003343c")
+	)
+	(fp_line
+		(start 4.5 6)
+		(end 0 6)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "b9bf5ed6-28a7-4297-b986-9851058559a3")
+	)
+	(fp_circle
+		(center 0 0)
+		(end 1.8 0)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(fill none)
+		(layer "F.SilkS")
+		(uuid "b1cc087d-0941-4e60-8ae2-a342b9cc2cea")
+	)
+	(fp_line
+		(start -5 6.35)
+		(end -5 -7.366)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "692bd646-6414-4fda-8c49-83ce3bda269a")
+	)
+	(fp_line
+		(start 5 -7.366)
+		(end -5 -7.366)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "eebc377e-d6d5-4ceb-a402-e92a02d3772a")
+	)
+	(fp_line
+		(start 5 6.35)
+		(end -5 6.35)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "3d433faf-3130-4d0c-8e31-69d03febca13")
+	)
+	(fp_line
+		(start 5 6.35)
+		(end 5 -7.366)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "65dbc44a-4033-438e-a5a6-235dce7f0982")
+	)
+	(fp_line
+		(start -4.5 6)
+		(end -4.5 -4.4)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "ef3dd61d-0359-4897-9ab1-cb40c16aa3af")
+	)
+	(fp_line
+		(start 0 -6.48)
+		(end 0 -4.45)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "f7d2fc85-3fda-42e2-9038-78a4578446ce")
+	)
+	(fp_line
+		(start 4.5 -4.45)
+		(end -4.5 -4.45)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "dbe4d8c0-6751-44d4-9f31-8d2fa6924aeb")
+	)
+	(fp_line
+		(start 4.5 6)
+		(end -4.5 6)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "3bb920c7-c830-40f3-a8aa-1bf4a7a66812")
+	)
+	(fp_line
+		(start 4.5 6)
+		(end 4.5 -4.4)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "a463f541-0879-4f5a-92c0-99df396de2c8")
+	)
+	(fp_circle
+		(center 0 0)
+		(end 1.8 0)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill none)
+		(layer "F.Fab")
+		(uuid "bb1c7b06-8ff2-4771-a873-009965037c82")
+	)
+	(fp_text user "${REFERENCE}"
+		(at 0 1.52 180)
+		(layer "F.Fab")
+		(uuid "0b48e795-c69a-4426-95eb-2a1a5ecf1047")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(pad "S" thru_hole rect
+		(at 0 -6.48)
+		(size 2.6 1)
+		(drill oval 1.5 0.5)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "11d93c4e-3bad-4437-89c7-72bfa3d2127f")
+	)
+	(pad "T" thru_hole roundrect
+		(at 0 4.92)
+		(size 2.6 1)
+		(drill oval 1.5 0.5)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(roundrect_rratio 0.25)
+		(uuid "36916137-963f-40d4-a4f2-61ed23310873")
+	)
+	(pad "TN" thru_hole roundrect
+		(at 0 -3.38)
+		(size 2.6 1)
+		(drill oval 1.5 0.5)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(roundrect_rratio 0.25)
+		(uuid "1ebde358-7934-44d0-a191-18359e4605d0")
+	)
+	(model "/Users/kurogedelic/KiCAD/8.0/3dmodels/Thonkicon.step"
+		(offset
+			(xyz 4.5 4.5 9)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 -180)
+		)
+	)
+)
