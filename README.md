@@ -1,6 +1,8 @@
-# BirdsBoard Modular Synthesizer Project
+# BirdsBoard
 
 BirdsBoard is an open-source modular synthesizer project based on the RP2350A microcontroller and the PT8211 I2S DAC. This project provides a collection of digitally controlled oscillator (DCO) applications for Eurorack-compatible systems.
+
+-> Based on [("Wren")(https://documents.hugelton.com/Wren)] indivisual module.
 
 ## Firmware
 
@@ -45,6 +47,10 @@ The hardware design files (schematics and PCB layouts) are available in the `Har
 - **DAC:** PT8211 I2S DAC
 - **CV Inputs:** 4x -5V~+5V CV inputs
 - **Gate Input:** 1x Gate input
+
+  ### JLCPCB Integration
+  Just send me the design file and I'll make it all for you.
+  Please prepare your own USB cable and Neopixel.
 
 ## Getting Started with arduino-cli
 
