@@ -39,4 +39,8 @@
 
 # debug information files
 *.dwo
+
+
 CLAUDE.MD
+.DS_Store
+.gitignore
